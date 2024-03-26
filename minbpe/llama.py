@@ -21,16 +21,17 @@ LLAMA_SPECIAL_TOKENS = { # added pad token
 class LlamaTokenizer(RegexTokenizer):
     """Lightweight wrapper on RegexTokenizer that matches (?) Llama's tokenizer."""
 
-    def __init__(self, character_coverage = 0.9995):
-        super().__init__(pattern=LLAMA_SPLIT_PATTERN)
+    def __init__(self, character_coverage = 0.9995, 
+                 pattern=LLAMA_SPLIT_PATTERN, special_tokens=LLAMA_SPECIAL_TOKENS):
+        super().__init__(pattern=pattern)
 
         # register the special tokens
-        self.register_special_tokens(LLAMA_SPECIAL_TOKENS)
+        self.register_special_tokens(special_tokens)
         self.unk_token_id = self.special_tokens['<|unk|>']
         self.num_special_tokens = len(self.special_tokens)
         
         self.character_coverage = character_coverage
-        self.vocab = {} # overwrites the vocab from the base class to have custom build_vocab function
+        self.vocab = {} # overwrites the vocab from the base class to use custom __build_vocab function
         # self.merges = {} # available from the base class
         self.rare_tokens = []
         self.counts = {}
@@ -229,7 +230,10 @@ class LlamaTokenizer(RegexTokenizer):
         payload = {'vocab': self.vocab, 
                    'merges': self.merges, 
                    'special_tokens': self.special_tokens,
-                   'rare_tokens': self.rare_tokens,}
+                   'rare_tokens': self.rare_tokens,
+                   'character_coverage': self.character_coverage,
+                   'pattern': self.pattern,
+                   }
         
         pickle.dump(payload, open(model_file, "wb"))
 
@@ -239,4 +243,12 @@ class LlamaTokenizer(RegexTokenizer):
         self.merges = payload['merges']
         self.special_tokens = payload['special_tokens']
         self.rare_tokens = payload['rare_tokens']
+        self.character_coverage = payload['character_coverage']
+        self.pattern = payload['pattern']
         self.num_special_tokens = len(self.special_tokens)
+
+    @classmethod
+    def from_pretrained(cls, model_file):
+        tokenizer = cls()
+        tokenizer.load(model_file)
+        return tokenizer
