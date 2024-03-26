@@ -12,16 +12,18 @@ There are two Tokenizers in this repository, both of which can perform the 3 pri
 4. [minbpe/gpt4.py](minbpe/gpt4.py): Implements the `GPT4Tokenizer`. This class is a light wrapper around the `RegexTokenizer` (2, above) that exactly reproduces the tokenization of GPT-4 in the [tiktoken](https://github.com/openai/tiktoken) library. The wrapping handles some details around recovering the exact merges in the tokenizer, and the handling of some unfortunate (and likely historical?) 1-byte token permutations.
 5. [minbpe/llama.py](minbpe/llama.py): Implements the `LlamaTokenizer` (almost?). This class is a light wrapper around the `RegexTokenizer` (2, above) that implements following functionality found in `LlamaTokenizer`.
    1. BPE on unicode instead of UTF-8.
-   2. GPT-4 regex pattern for splitting text, with splitting on individual digits instea of {1,3}.
+   2. GPT-4 regex pattern for splitting text, with splitting on individual digits instead of {1,3}.
    3. utf-8 fallback for bytes that are not in the tokenizer's unicode vocabulary.
    4. character coverage to handle rare tokens during training.
    5. ability to instantiate the tokenizer with a pre-trained model, using `.from_pretrained()` method.
-   6. TODOs/Caveats:
-      1. Use `encode_ordinary` instead of `encode` to encode text.
-      2. Find the exact Llama regex pattern for splitting text.
-      3. Haven't ported the code to `train.py` yet.
+   6. Notes/TODOs:
+      1. The vocabulary starts with special tokens (4 in this case: unk, bos, eos, pad), followed by utf-8 fallback byte tokens (256), then unicode tokens (variable), and finally the merge tokens (variable).
+      2. To use the tokenizer, first either train it on a corpus using the `train` method or load a pretrained one using the `from_pretrained` method, which can take a file saved using `save` method.
+      3. Use `encode_ordinary` instead of `encode` to encode text. (#TODO)
       4. Added '<|pad|>' as a special token.
-      5. Match the output with the output of LlamaTokenizer. 
+      5. Find the exact Llama regex pattern for splitting text. (#TODO)
+      6. Haven't ported the code to `train.py` yet. (#TODO)
+      7. Match the output with the output of LlamaTokenizer. (#TODO)
 6. [test/test_llama.py](test/test_llama.py): Implements the tests for the `LlamaTokenizer` class, duplicating the tests for the `GPT4Tokenizer` class; however there were some differences to I made a new test file.
 
 Finally, the script [train.py](train.py) trains the two major tokenizers on the input text [tests/taylorswift.txt](tests/taylorswift.txt) (this is the Wikipedia entry for her kek) and saves the vocab to disk for visualization. This script runs in about 25 seconds on my (M1) MacBook.
