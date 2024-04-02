@@ -43,7 +43,6 @@ class LlamaMorphPiece(RegexTokenizer):
         self.counts = {}
         self.verbose = False
         self.morphtable,self.old_vocab = pickle.load(open(morpheme_file,'rb'))
-        self.reverse_morphtable = {tuple(v):k for k,v in self.morphtable.items()}
         
     def build_morphvocab(self,text):
         
@@ -183,8 +182,6 @@ class LlamaMorphPiece(RegexTokenizer):
         self.merges = merges # used in encode()
         self.vocab_itos = vocab_wo_merges   # used in decode()
         
-
-    
     def _encode_chunk(self, tokens):
         # given a string, return list of integers (the tokens)
 
@@ -270,7 +267,7 @@ class LlamaMorphPiece(RegexTokenizer):
                 ids.extend(self.encode_ordinary(part))
         return ids
     
-    def decode(self,ids, include_unk=False):
+    def decode(self,ids):
         tokens = self._convert_ids_to_tokens(ids)
         converted_text = self.convert_tokens_to_string(tokens)
         return converted_text
@@ -279,11 +276,15 @@ class LlamaMorphPiece(RegexTokenizer):
         
         def flush_chunk(tokens,chunk,typ):
             if typ=='utf8':
-                tokens += b"".join(self.vocab_itos[idx] for idx in chunk).decode() #list(b"".join(self.vocab_itos[idx] for idx in chunk))
+                part_bytes = []
+                for idx in chunk:
+                    if idx in self.inverse_special_tokens:
+                        tokens.append(self.inverse_special_tokens[idx])
+                    else:
+                        part_bytes.append(self.vocab_itos[idx])
+                tokens.append(b"".join(part_bytes).decode())
             elif typ=='uni': # also for morphpiece tokens
                 tokens += [self.vocab_itos[idx] for idx in chunk]
-            else: # unk_chunk
-                tokens += ['<|unk|>']
             chunk = []
             return tokens,chunk
         
@@ -293,16 +294,10 @@ class LlamaMorphPiece(RegexTokenizer):
         
         utf8_boundary = self.num_special_tokens + 256
         
-        # ids are of three types, from utf-8 bytes, unicode/morphpiece tokens, and unk_tokens. 
+        # ids are of two types, from utf-8 bytes/special tokans and unicode/morphpiece tokens. 
         # I iterate over ids and flush out the chunks as needed, updating the output text string. 
         
         for id in ids:
-            # if id in self.special_tokens.values(): # unk_token
-            #     if len(utf8_chunk)>0: # flush out the utf8_chunk and uni_chunk.
-            #         tokens,utf8_chunk = flush_chunk(tokens,utf8_chunk,'utf8')
-            #     elif len(uni_chunk)>0:
-            #         tokens,uni_chunk = flush_chunk(tokens,uni_chunk,'uni')
-            #     tokens.extend(self.reverse_special_tokens[id])
             if id<utf8_boundary: # utf-8 fallback bytes and special tokens except for unk_token
                 if len(uni_chunk)>0:
                     tokens,uni_chunk = flush_chunk(tokens,uni_chunk,'uni')
