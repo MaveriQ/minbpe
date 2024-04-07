@@ -20,7 +20,7 @@ There are two Tokenizers in this repository, both of which can perform the 3 pri
       1. The vocabulary starts with special tokens (4 in this case: unk, bos, eos, pad), followed by utf-8 fallback byte tokens (256), then unicode tokens (variable), and finally the merge tokens (variable).
       2. To use the tokenizer, first either train it on a corpus using the `train` method or load a pretrained one using the `from_pretrained` method, which can take a file saved using `save` method.
       3. ~Use `encode_ordinary` instead of `encode` to encode text. (#TODO)~
-      4. ~Added '<|pad|>' as a special token~.
+      4. Added '<|pad|>' as a special token.
       5. Find the exact Llama regex pattern for splitting text. (#TODO)
       6. ~Haven't ported the code to `train.py` yet. (#TODO)~
       7. Match the output with the output of LlamaTokenizer. (#TODO)
